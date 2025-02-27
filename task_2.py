@@ -1,14 +1,20 @@
 from datasketch import HyperLogLog
 import time
+import json
 
 
 def count_logs(logs):
     count_set = set()
 
-    with open(logs, "r") as fh:
+    with open(file, "r") as fh:
         for line in fh:
-            count_set.add(line.strip())
-
+            try:
+                data = json.loads(line.strip())
+                ips = data.get("remote_addr")
+                if ips:
+                    count_set.add(ips)
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON line skipped: {line.strip()} | Error: {e}")
     return len(count_set)
 
 
@@ -17,13 +23,19 @@ def count_logs_HLL(logs, p=15):
 
     with open(logs, "r") as fh:
         for line in fh:
-            if line.strip():  # Ignore empty lines
-                hll.update(line.strip().encode("utf-8"))
+            try:
+                data = json.loads(line.strip())
+                ips = data.get("remote_addr")
+                if ips:
+                    hll.update(ips.strip().encode("utf-8"))
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON line skipped: {line.strip()} | Error: {e}")
+
     return hll.count()
 
 
 if __name__ == "__main__":
-    file = "./logs/lms_stage_access.log"
+    file = "./logs/lms-stage-access.log"
 
     start_time = time.perf_counter()
     unique_count_1 = count_logs(file)
